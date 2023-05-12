@@ -17,14 +17,10 @@ def sha1(x):
 # Should be deterministic given an idx
 def get_msg(do_blob, idx):
   random.seed(idx);
-  if do_blob:
-    blob_length = random.randint(1, 24000)
-  else:
-    blob_length = random.randint(1, 255)
-
+  blob_length = random.randint(1, 24000) if do_blob else random.randint(1, 255)
   if random.randint(1, 2) == 1:
     # blob that cannot be compressed (well, compresses to 85% of original size)
-    return ''.join([random.choice(CHARS) for x in xrange(blob_length)])
+    return ''.join([random.choice(CHARS) for _ in xrange(blob_length)])
   else:
     # blob that can be compressed
     return random.choice(CHARS) * blob_length
@@ -109,7 +105,12 @@ INSERT INTO t1(id,msg_prefix,msg,msg_length,msg_checksum) VALUES (%d,'%s','%s',%
 def get_update(msg, idx):
   return """
 UPDATE t1 SET msg_prefix='%s',msg='%s',msg_length=%d,msg_checksum='%s' WHERE id=%d""" % (
-msg[0:255], msg, len(msg), sha1(msg), idx)
+      msg[:255],
+      msg,
+      len(msg),
+      sha1(msg),
+      idx,
+  )
 
 def get_insert_on_dup(msg, idx):
   return """
@@ -120,17 +121,31 @@ msg=VALUES(msg),
 msg_length=VALUES(msg_length),
 msg_checksum=VALUES(msg_checksum),
 id=VALUES(id)""" % (
-msg[0:255], msg, len(msg), sha1(msg), idx)
+      msg[:255],
+      msg,
+      len(msg),
+      sha1(msg),
+      idx,
+  )
 
 def get_insert(msg, idx):
   return """
 INSERT INTO t1 (msg_prefix,msg,msg_length,msg_checksum,id) VALUES ('%s','%s',%d,'%s',%d)""" % (
-msg[0:255], msg, len(msg), sha1(msg), idx)
+      msg[:255],
+      msg,
+      len(msg),
+      sha1(msg),
+      idx,
+  )
 
 def get_insert_null(msg):
   return """
 INSERT INTO t1 (msg_prefix,msg,msg_length,msg_checksum,id) VALUES ('%s','%s',%d,'%s',NULL)""" % (
-msg[0:255], msg, len(msg), sha1(msg))
+      msg[:255],
+      msg,
+      len(msg),
+      sha1(msg),
+  )
 
 class ChecksumWorker(threading.Thread):
   global LG_TMP_DIR
@@ -243,10 +258,7 @@ class Worker(threading.Thread):
 
   # Check to see if the idx is in the first column of res_array
   def check_exists(self, res_array, idx):
-    for res in res_array:
-      if res[0] == idx:
-        return True
-    return False
+    return any(res[0] == idx for res in res_array)
 
   def run(self):
     try:

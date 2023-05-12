@@ -36,7 +36,7 @@ VALID_MODULE_NAME = re.compile(r'[_a-z]\w*\.py$', re.IGNORECASE)
 
 
 def _make_failed_import_test(name, suiteClass):
-    message = 'Failed to import test module: %s' % name
+    message = f'Failed to import test module: {name}'
     if hasattr(traceback, 'format_exc'):
         # Python 2.3 compatibility
         # format_exc returns two frames of discover.py as well
@@ -73,8 +73,7 @@ class TestLoader(unittest.TestLoader):
         testCaseNames = self.getTestCaseNames(testCaseClass)
         if not testCaseNames and hasattr(testCaseClass, 'runTest'):
             testCaseNames = ['runTest']
-        loaded_suite = self.suiteClass(map(testCaseClass, testCaseNames))
-        return loaded_suite
+        return self.suiteClass(map(testCaseClass, testCaseNames))
 
     def loadTestsFromModule(self, module, use_load_tests=True):
         """Return a suite of all tests cases contained in the given module"""
@@ -136,10 +135,9 @@ class TestLoader(unittest.TestLoader):
             elif isinstance(test, unittest.TestCase):
                 return self.suiteClass([test])
             else:
-                raise TypeError("calling %s returned %s, not a test" %
-                                (obj, test))
+                raise TypeError(f"calling {obj} returned {test}, not a test")
         else:
-            raise TypeError("don't know how to make test from: %s" % obj)
+            raise TypeError(f"don't know how to make test from: {obj}")
 
     def loadTestsFromNames(self, names, module=None):
         """Return a suite of all tests cases found using the given sequence
@@ -191,7 +189,7 @@ class TestLoader(unittest.TestLoader):
 
         top_level_dir = os.path.abspath(top_level_dir)
 
-        if not top_level_dir in sys.path:
+        if top_level_dir not in sys.path:
             # all test modules must be importable from the top level directory
             # should we *unconditionally* put the start directory in first
             # in sys.path to minimise likelihood of conflicts between installed
@@ -231,8 +229,7 @@ class TestLoader(unittest.TestLoader):
         assert not os.path.isabs(_relpath), "Path must be within the project"
         assert not _relpath.startswith('..'), "Path must be within the project"
 
-        name = _relpath.replace(os.path.sep, '.')
-        return name
+        return _relpath.replace(os.path.sep, '.')
 
     def _get_module_from_name(self, name):
         __import__(name)

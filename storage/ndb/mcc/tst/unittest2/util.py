@@ -11,7 +11,7 @@ def safe_repr(obj, short=False):
         result = object.__repr__(obj)
     if not short or len(result) < _MAX_LENGTH:
         return result
-    return result[:_MAX_LENGTH] + ' [truncated]...'
+    return f'{result[:_MAX_LENGTH]} [truncated]...'
 
 def safe_str(obj):
     try:
@@ -20,7 +20,7 @@ def safe_str(obj):
         return object.__str__(obj)
 
 def strclass(cls):
-    return "%s.%s" % (cls.__module__, cls.__name__)
+    return f"{cls.__module__}.{cls.__name__}"
 
 def sorted_list_difference(expected, actual):
     """Finds elements in only one or the other of two, sorted input lists.
@@ -70,7 +70,6 @@ def unorderable_list_difference(expected, actual, ignore_duplicate=False):
     has O(n*n) performance.
     """
     missing = []
-    unexpected = []
     while expected:
         item = expected.pop()
         try:
@@ -85,6 +84,7 @@ def unorderable_list_difference(expected, actual, ignore_duplicate=False):
                 except ValueError:
                     pass
     if ignore_duplicate:
+        unexpected = []
         while actual:
             item = actual.pop()
             unexpected.append(item)

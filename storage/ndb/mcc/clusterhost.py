@@ -141,7 +141,7 @@ class  SolarisHostInfo(HostInfo):
 
     @property
     def cores(self):
-        return len(self.ch.exec_blocking(['/usr/sbin/psrinfo']).split('\n')[0:-1])
+        return len(self.ch.exec_blocking(['/usr/sbin/psrinfo']).split('\n')[:-1])
 
 class MacHostInfo(HostInfo):
     """Specialization for MacOS which uses sysctl to retrieve host information."""
@@ -198,7 +198,11 @@ class CygwinHostInfo(HostInfo):
         if isinstance(self.ch, LocalClusterHost):
             wmic = unicode(wmic, 'utf-16')
 
-        return sum([ int(ln.split('=')[1]) for ln in wmic.split('\n') if  'NumberOfCores' in ln ])
+        return sum(
+            int(ln.split('=')[1])
+            for ln in wmic.split('\n')
+            if 'NumberOfCores' in ln
+        )
 
 class WindowsHostInfo(CygwinHostInfo):
     """Specialization of CygwinHostInfo for native Windows which uses ntpath as the path module."""
@@ -268,12 +272,14 @@ class ABClusterHost(object):
         """Create an appropriate HostInfo object for localhost. 
         Uses Pythons platform.system() to determine the type of HostInfo object to return. 
         """
-        if self._hostInfo == None:
+        if self._hostInfo is None:
             (system, machine) = self._get_system_tuple()
             if hostInfo_map.has_key(system):
                 self._hostInfo = hostInfo_map[system](self, system, machine)
             else:
-                _logger.debug('Using default HostInfo for host='+self.host+'('+system+','+machine+')')
+                _logger.debug(
+                    f'Using default HostInfo for host={self.host}({system},{machine})'
+                )
                 return HostInfo(self, system, machine)
 
         return self._hostInfo
@@ -364,7 +370,9 @@ class ABClusterHost(object):
             choice = posixpath.join(basedir,l,executable)
             if self.file_exists(choice):
                 return choice
-        raise Exception('Cannot locate '+executable+' in '+posixpath.join(basedir, str(locations))+' on host '+self.host)
+        raise Exception(
+            f'Cannot locate {executable} in {posixpath.join(basedir, str(locations))} on host {self.host}'
+        )
    
     @abc.abstractmethod
     def _exec_cmdv(self, cmdv, procCtrl, stdinFile):
@@ -438,10 +446,7 @@ class LocalClusterHost(ABClusterHost):
         its stat result object is returned, otherwise None.
         path - file to check the existence of
         """
-        if os.path.exists(path):
-            return os.stat(path)
-        else:
-            return None
+        return os.stat(path) if os.path.exists(path) else None
 
     def list_dir(self, path):
         """List the files in a directory on the local host. Forwards to os.listdir().
@@ -487,13 +492,13 @@ class LocalClusterHost(ABClusterHost):
                 except subprocess.CalledProcessError as cpe:
                     if cpe.returncode != util.get_val(procCtrl, 'noRaise', 0):
                         output.seek(0)
-                        _logger.error('output='+output.read())
+                        _logger.error(f'output={output.read()}')
                         raise
                 output.seek(0)
                 return output.read()
-            
+
             proc = subprocess.Popen(cmdv, stdin=stdin, stderr=output)
-            if proc.poll() == None and procCtrl.has_key('daemonWait'):
+            if proc.poll() is None and procCtrl.has_key('daemonWait'):
                 _logger.debug('Popen waits {0} sec for {1}'.format(procCtrl['daemonWait'], ' '.join(cmdv)))
                 time.sleep(procCtrl['daemonWait'])
             if proc.poll() != None:
@@ -527,11 +532,14 @@ def produce_ABClusterHost(hostname='localhost', user=None, pwd=None):
     """Factory method which returns RemoteClusterHost or LocalClusterHost depending 
     on the value of hostname.."""
 
-    if hostname == 'localhost' or hostname == '127.0.0.1' or hostname == socket.gethostname():
+    if hostname in ['localhost', '127.0.0.1', socket.gethostname()]:
         return LocalClusterHost(hostname)
-    
+
     hostname_fqdn = socket.getfqdn(hostname)
-    if hostname_fqdn == socket.getfqdn('localhost') or hostname_fqdn == socket.getfqdn(socket.gethostname()):
+    if hostname_fqdn in [
+        socket.getfqdn('localhost'),
+        socket.getfqdn(socket.gethostname()),
+    ]:
         return LocalClusterHost(hostname)
     import remote_clusterhost
     return remote_clusterhost.RemoteClusterHost(hostname, user, pwd)

@@ -23,11 +23,11 @@ def _relpath_nt(path, start=os.path.curdir):
         unc_path, rest = os.path.splitunc(path)
         unc_start, rest = os.path.splitunc(start)
         if bool(unc_path) ^ bool(unc_start):
-            raise ValueError("Cannot mix UNC and non-UNC paths (%s and %s)"
-                                                                % (path, start))
+            raise ValueError(f"Cannot mix UNC and non-UNC paths ({path} and {start})")
         else:
-            raise ValueError("path is on drive %s, start on drive %s"
-                                                % (path_list[0], start_list[0]))
+            raise ValueError(
+                f"path is on drive {path_list[0]}, start on drive {start_list[0]}"
+            )
     # Work out how much of the filepath is shared by start and path.
     for i in range(min(len(start_list), len(path_list))):
         if start_list[i].lower() != path_list[i].lower():
@@ -36,9 +36,7 @@ def _relpath_nt(path, start=os.path.curdir):
         i += 1
 
     rel_list = [os.path.pardir] * (len(start_list)-i) + path_list[i:]
-    if not rel_list:
-        return os.path.curdir
-    return os.path.join(*rel_list)
+    return os.path.curdir if not rel_list else os.path.join(*rel_list)
 
 # default to posixpath definition
 def _relpath_posix(path, start=os.path.curdir):
@@ -46,7 +44,7 @@ def _relpath_posix(path, start=os.path.curdir):
 
     if not path:
         raise ValueError("no path specified")
-    
+
     start_list = os.path.abspath(start).split(os.path.sep)
     path_list = os.path.abspath(path).split(os.path.sep)
 
@@ -54,9 +52,7 @@ def _relpath_posix(path, start=os.path.curdir):
     i = len(os.path.commonprefix([start_list, path_list]))
 
     rel_list = [os.path.pardir] * (len(start_list)-i) + path_list[i:]
-    if not rel_list:
-        return os.path.curdir
-    return os.path.join(*rel_list)
+    return os.path.curdir if not rel_list else os.path.join(*rel_list)
 
 if os.path is sys.modules.get('ntpath'):
     relpath = _relpath_nt

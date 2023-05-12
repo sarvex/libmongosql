@@ -15,7 +15,7 @@ class BaseTestSuite(unittest.TestSuite):
         self.addTests(tests)
 
     def __repr__(self):
-        return "<%s tests=%s>" % (util.strclass(self.__class__), list(self))
+        return f"<{util.strclass(self.__class__)} tests={list(self)}>"
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -32,10 +32,7 @@ class BaseTestSuite(unittest.TestSuite):
         return iter(self._tests)
 
     def countTestCases(self):
-        cases = 0
-        for test in self:
-            cases += test.countTestCases()
-        return cases
+        return sum(test.countTestCases() for test in self)
 
     def addTest(self, test):
         # sanity checks
@@ -147,11 +144,8 @@ class TestSuite(BaseTestSuite):
                 self._addClassOrModuleLevelException(result, e, errorName)
     
     def _get_previous_module(self, result):
-        previousModule = None
         previousClass = getattr(result, '_previousTestClass', None)
-        if previousClass is not None:
-            previousModule = previousClass.__module__
-        return previousModule
+        return previousClass.__module__ if previousClass is not None else None
         
         
     def _handleModuleFixture(self, test, result):

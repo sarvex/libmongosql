@@ -162,7 +162,7 @@ class TestProgram(object):
 
     def _do_discovery(self, argv, Loader=loader.TestLoader):
         # handle command line args for test discovery
-        self.progName = '%s discover' % self.progName
+        self.progName = f'{self.progName} discover'
         import optparse
         parser = optparse.OptionParser()
         parser.prog = self.progName
@@ -193,7 +193,7 @@ class TestProgram(object):
 
         for name, value in zip(('start', 'pattern', 'top'), args):
             setattr(options, name, value)
-        
+
         # only set options from the parsing here
         # if they weren't set explicitly in the constructor
         if self.failfast is None:
@@ -202,7 +202,7 @@ class TestProgram(object):
             self.catchbreak = options.catchbreak
         if self.buffer is None:
             self.buffer = options.buffer
-        
+
         if options.verbose:
             self.verbosity = 2
 

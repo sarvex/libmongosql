@@ -117,7 +117,6 @@ class TestResult(unittest.TestResult):
 
     def addSuccess(self, test):
         "Called when a test has completed successfully"
-        pass
 
     def addSkip(self, test, reason):
         """Called when a test is skipped."""

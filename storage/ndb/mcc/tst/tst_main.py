@@ -32,15 +32,14 @@ sys.path += [tst_dir, mcc_dir, '/opt/csw/lib/python/site-packages' ]
 
 import logging
 if pyminor < 7:
-    print('Running with Python version %s', 
-          str(platform.python_version_tuple()))
+    print('Running with Python version %s', platform.python_version_tuple())
     import unittest2 as unittest
 else:
     import unittest
 
 utmod = unittest
 
-import traceback    
+import traceback
 import json
 import urlparse
 import time
@@ -148,7 +147,10 @@ class Test0ConfigIni(utmod.TestCase):
         pass
             
     def test_get_option_values(self):
-        self.assertEqual(config_parser.get_option_value_set(self.cp, 'HostName'), set(['siv27','siv28']))
+        self.assertEqual(
+            config_parser.get_option_value_set(self.cp, 'HostName'),
+            {'siv27', 'siv28'},
+        )
  
     def test_get_node_dicts(self):
         print config_parser.get_node_dicts(self.cp, 0)
@@ -188,7 +190,7 @@ class Test3Ports(utmod.TestCase):
 class _TestABClusterHost:
     def setUp(self):
         self.rtd = time.strftime("%Y-%m-%dT%H-%M-%S",time.localtime())+str(self.__class__.__name__)
-        logging.debug('rtd: '+self.rtd)
+        logging.debug(f'rtd: {self.rtd}')
         self.ch.mkdir_p(self.rtd)
 
     def tearDown(self):
@@ -206,7 +208,7 @@ class _TestABClusterHost:
             
     def test_fileops(self):
         d = self.ch.path_module.join(self.rtd, 'foo', 'bar', '')
-        logging.debug('d='+d)
+        logging.debug(f'd={d}')
         self.ch.mkdir_p(d)
         bazname = self.ch.path_module.join(d, 'baz')
         with self.ch.open(bazname, 'w+') as f:
@@ -220,7 +222,7 @@ class _TestABClusterHost:
             return
         self.assertTrue(stat.S_ISDIR(self.ch.sftp.stat(self.rtd).st_mode))
 
-    @utmod.skip('Cannot create files with attributes')    
+    @utmod.skip('Cannot create files with attributes')
     def test_list_dir_no_x(self):
         nox_name = self.ch.path_module.join(self.rtd, 'nox')
         notmine_name = self.ch.path_module.join(self.rtd, 'not_mine')
@@ -229,16 +231,16 @@ class _TestABClusterHost:
 
         self.assertTrue(stat.S_ISDIR(nox_mode))
         self.assertTrue(is_set(stat.S_IMODE(nox_mode), stat.S_IXGRP))
-        
+
         self.assertTrue(stat.S_ISDIR(notmine_mode))
         self.assertTrue(is_set(stat.S_IMODE(notmine_mode), stat.S_IXOTH))
 
-        logging.debug('listdir(nox)='+str(self.self.ch.list_dir(nox_name)))
-        logging.debug('listdir(notmine)='+str(self.self.ch.list_dir(notmine_name)))
+        logging.debug(f'listdir(nox)={str(self.self.ch.list_dir(nox_name))}')
+        logging.debug(f'listdir(notmine)={str(self.self.ch.list_dir(notmine_name))}')
         
     def test_mkdir_p(self):
         somedir_name = self.ch.path_module.join(self.rtd, 'some_dir')
-        logging.debug('somedir_name'+somedir_name)
+        logging.debug(f'somedir_name{somedir_name}')
         self.ch.mkdir_p(somedir_name)
 
     def test_hostInfo(self):
@@ -270,10 +272,10 @@ class Test5RemoteClusterHost(utmod.TestCase, _TestABClusterHost):
 
         content = 'Some text here\nSome more text on another line\n'
         (lh, lname) = tempfile.mkstemp()
-        logging.debug('lname: '+lname)
+        logging.debug(f'lname: {lname}')
         try:
             os.write(lh, content)
-			
+
             # Note! Might not work with a genuine remote host, as rex.name
             # might not be creatable there
             (rh, rname) = tempfile.mkstemp()

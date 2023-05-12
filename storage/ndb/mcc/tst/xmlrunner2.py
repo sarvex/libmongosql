@@ -64,8 +64,7 @@ class XMLTestResult(unittest.TextTestResult):
                      'stime': time.time() }
 
     def _addOut(self, kind):
-        buf = getattr(self, '_std{0}_buffer'.format(kind))
-        if buf:
+        if buf := getattr(self, '_std{0}_buffer'.format(kind)):
             tag = 'system-{0}'.format(kind)
             self._tb.start(tag, {})
             self._tb.data(buf.getvalue())

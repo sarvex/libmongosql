@@ -64,7 +64,9 @@ def try_connect(url_host, port, success=True, retdict={}):
     except socket.error as err:
         if retdict.has_key(err.errno):
             return retdict[err.errno]
-        _logger.debug('err.errno='+str(err.errno)+' not found in retdict='+str(retdict))
+        _logger.debug(
+            f'err.errno={str(err.errno)} not found in retdict={str(retdict)}'
+        )
         raise
     else:
         return success
@@ -75,7 +77,7 @@ def try_connect(url_host, port, success=True, retdict={}):
 
 def _retdict(name, val):
     rd = { getattr(errno,name) : val }
-    wsa = 'WSA'+name
+    wsa = f'WSA{name}'
     if hasattr(errno, wsa):
         rd[getattr(errno, wsa)] = val
     return rd 
@@ -111,8 +113,8 @@ def html_rep(obj):
     found in the str() representation to the corresponding html-escape sequence."""
     
     s = str(obj)
-    if s == '':
-        s = repr(obj)            
+    if not s:
+        s = repr(obj)
     return s.strip().replace('<','&lt;').replace('>', '&gt;')
 
 def get_val(d, k, default=None):
@@ -125,28 +127,26 @@ def get_val(d, k, default=None):
     @rtype: str
     @return: Value corresponding to key L{k} or L{default} 
     """
-    if not d.has_key(k):
-        return default
-    return d[k]
+    return default if not d.has_key(k) else d[k]
 
 def get_fmask(perm, role):
     """Get the stat permission mask value corresponding to perm (X,R,W) 
     and role (USR, GRP, OTH)."""
-    return getattr(stat, 'S_I'+perm+role)
+    return getattr(stat, f'S_I{perm}{role}')
 
 class Param(dict):
     """Specialization of dict representing a command line parameter.
     Extending dict allows easy serialization as Json."""
     
     def __init__(self, name, val=None, sep='='):
-        if type(name) == dict or type(name) == Param:
+        if type(name) in [dict, Param]:
             for k in name.keys():
                 self[k] = name[k]
             return
         self['name'] = name
         if val:
             self['val'] = val
-            self['sep'] = sep          
+            self['sep'] = sep
         assert self['name'] == name
  
     def __str__(self):
@@ -209,8 +209,8 @@ def _parse_until_delim(ctx, fld, delim):
     i = ctx['str'].find(delim)
     if (i == -1):
         return False
- 
-    ctx[fld] = ctx['str'][0:i]
+
+    ctx[fld] = ctx['str'][:i]
     ctx['str'] = ctx['str'][i+len(delim):]
     return True	
 

@@ -33,9 +33,7 @@ from clusterhost import ABClusterHost
 _logger = logging.getLogger(__name__)
 
 def quote_if_contains_space(s):
-    if ' ' in s:
-        return '"'+s+'"'
-    return s
+    return f'"{s}"' if ' ' in s else s
 
 class RemoteExecException(clusterhost.ExecException):
     """Exception type thrown whenever os-command execution fails on 
@@ -123,11 +121,11 @@ class RemoteClusterHost(ABClusterHost):
             if 'Windows' in system:
                 system = 'Windows'
         else:
-            _logger.debug('preamble='+preamble)
+            _logger.debug(f'preamble={preamble}')
             raw_uname = self.exec_blocking(['uname', '-sp'])
-            _logger.debug('raw_uname='+raw_uname)
+            _logger.debug(f'raw_uname={raw_uname}')
             uname = raw_uname.replace(preamble, '', 1)
-            _logger.debug('uname='+uname)
+            _logger.debug(f'uname={uname}')
             (system, processor) = uname.split(' ')
             if 'CYGWIN' in system:
                 system = 'CYGWIN'
@@ -176,7 +174,7 @@ class RemoteClusterHost(ABClusterHost):
         except IOError as ioerr:
             if ioerr.errno == errno.ENOENT:
                 return None
-            _logger.debug('stat failure on '+path)
+            _logger.debug(f'stat failure on {path}')
             raise
     
     def list_dir(self, path):
@@ -192,8 +190,13 @@ class RemoteClusterHost(ABClusterHost):
             for role in ['USR', 'GRP', 'OTH']:
                 mask = util.get_fmask('R', role)|util.get_fmask('X',role)
                 if (m & mask) != mask:
-                    _logger.debug('Directory '+path+' does not have both read and execute permission for ' + role + '.\nIf you depend on '+role+ ' for access, the empty directory listing may not be correct')
-        
+                    _logger.debug(
+                        f'Directory {path} does not have both read and execute permission for {role}'
+                        + '.\nIf you depend on '
+                        + role
+                        + ' for access, the empty directory listing may not be correct'
+                    )
+
         return content
     
     def mkdir_p(self, path):
@@ -203,22 +206,22 @@ class RemoteClusterHost(ABClusterHost):
         a directory an exception is raised.
         path - directory to create on remote host
         """
-        _logger.debug('mkdir_p('+path+')')
+        _logger.debug(f'mkdir_p({path})')
         path = self._sftpify(path)
         pa = self.file_exists(path)
         if pa != None:
             #print str(pa)+" "+str(pa.st_mode)
             if not util.is_dir(pa):
-                raise Exception(self.host+':'+path+' is not a directory')
+                raise Exception(f'{self.host}:{path} is not a directory')
             return
         # Need to user normpath here since dirname of a directory with a trailing slash
         #  is the directory without a slash (a dirname bug?)
         sd = ntpath.splitdrive(path)
-        _logger.debug('sd='+str(sd))
+        _logger.debug(f'sd={str(sd)}')
         if sd[1] == '':
-            _logger.debug('path='+path+' is a drive letter. Returning...')
+            _logger.debug(f'path={path} is a drive letter. Returning...')
             return
-            
+
         np = self.path_module.normpath(path)
         parent = self.path_module.dirname(np)
         assert parent != path
@@ -252,12 +255,12 @@ class RemoteClusterHost(ABClusterHost):
 
         with contextlib.closing(self.client.get_transport().open_session()) as chan:
             chan.set_combine_stderr(True)
-            _logger.debug('cmdln='+cmdln)
+            _logger.debug(f'cmdln={cmdln}')
             chan.exec_command(cmdln)
-    
+
             if (contents != None):
-                _logger.debug('Using supplied stdin from ' + stdinFile + ': ')
-                _logger.debug(contents[0:50] + '...')
+                _logger.debug(f'Using supplied stdin from {stdinFile}: ')
+                _logger.debug(f'{contents[:50]}...')
                 chan.sendall(contents)
                 chan.shutdown_write()     
 
@@ -265,7 +268,7 @@ class RemoteClusterHost(ABClusterHost):
                 output = chan.makefile('rb')
                 _logger.debug('Waiting for command...')
                 exitstatus = chan.recv_exit_status()
-                if exitstatus != 0 and exitstatus != util.get_val(procCtrl, 'noRaise'): 
+                if exitstatus not in [0, util.get_val(procCtrl, 'noRaise')]: 
                     raise RemoteExecException(self.host, cmdln, exitstatus, output)
                 return output.read()
             else:
@@ -294,7 +297,7 @@ class RemoteClusterHost(ABClusterHost):
         inFile - File-like object providing stdin to the command.
         """
         cmdln = ' '.join([quote_if_contains_space(a) for a in cmdv])
-        _logger.debug('cmdln='+cmdln)
+        _logger.debug(f'cmdln={cmdln}')
 
         with contextlib.closing(self.client.get_transport().open_session()) as chan:
             chan.exec_command(cmdln)

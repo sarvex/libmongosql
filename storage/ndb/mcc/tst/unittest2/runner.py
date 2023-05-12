@@ -117,9 +117,9 @@ class TextTestResult(result.TestResult):
     def printErrorList(self, flavour, errors):
         for test, err in errors:
             self.stream.writeln(self.separator1)
-            self.stream.writeln("%s: %s" % (flavour, self.getDescription(test)))
+            self.stream.writeln(f"{flavour}: {self.getDescription(test)}")
             self.stream.writeln(self.separator2)
-            self.stream.writeln("%s" % err)
+            self.stream.writeln(f"{err}")
 
     def stopTestRun(self):
         super(TextTestResult, self).stopTestRun()
@@ -153,7 +153,7 @@ class TextTestRunner(unittest.TextTestRunner):
         result.failfast = self.failfast
         result.buffer = self.buffer
         registerResult(result)
-        
+
         startTime = time.time()
         startTestRun = getattr(result, 'startTestRun', None)
         if startTestRun is not None:
@@ -174,7 +174,7 @@ class TextTestRunner(unittest.TextTestRunner):
         self.stream.writeln("Ran %d test%s in %.3fs" %
                             (run, run != 1 and "s" or "", timeTaken))
         self.stream.writeln()
-        
+
         expectedFails = unexpectedSuccesses = skipped = 0
         try:
             results = map(len, (result.expectedFailures,
@@ -200,7 +200,7 @@ class TextTestRunner(unittest.TextTestRunner):
         if unexpectedSuccesses:
             infos.append("unexpected successes=%d" % unexpectedSuccesses)
         if infos:
-            self.stream.writeln(" (%s)" % (", ".join(infos),))
+            self.stream.writeln(f' ({", ".join(infos)})')
         else:
             self.stream.write("\n")
         return result

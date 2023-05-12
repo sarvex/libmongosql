@@ -7,12 +7,10 @@ import os.path
 import mcc_config
 
 def num_pyver(vn):
-    if isinstance(vn, str): 
-        return int(''.join(filter(str.isdigit, vn)))
-    return vn
+    return int(''.join(filter(str.isdigit, vn))) if isinstance(vn, str) else vn
 
 def num_py_major_minor_tuple():
-    return map(num_pyver, platform.python_version_tuple()[0:2])
+    return map(num_pyver, platform.python_version_tuple()[:2])
 
 if __name__ == '__main__':
     if os.path.isabs(mcc_config.MCC_INSTALL_BINDIR):

@@ -76,7 +76,9 @@ class ReplyJsonEncoder(json.JSONEncoder):
         if isinstance(obj, types.TracebackType):
             return traceback.extract_tb(obj)
         if hasattr(obj, '__dict__'):
-            assert isinstance(vars(obj), dict), str(type(obj)) + ' dict attr has type '+str(type(vars(obj)))
+            assert isinstance(
+                vars(obj), dict
+            ), f'{str(type(obj))} dict attr has type {str(type(vars(obj)))}'
             return vars(obj)
         # Ordinary json serialization
         return json.JSONEncoder.default(self, obj)
@@ -179,13 +181,17 @@ def handle_createFileReq(req, body):
     
     (user, pwd) = get_cred(body)
     f = body['file']
-    
+
     with produce_ABClusterHost(f['hostName'], user, pwd) as ch:
         pathname = f['path']
         if f.has_key('name'):
             pathname = ch.path_module.join(f['path'], f['name'])
-            assert not (f.has_key('autoComplete') and f['autoComplete']) 
-            assert not (not (f.has_key('overwrite') and f['overwrite']) and ch.file_exists(pathname)), 'File '+pathname+' already exists on host '+ch.host
+            assert not (f.has_key('autoComplete') and f['autoComplete'])
+            assert (
+                f.has_key('overwrite') and f['overwrite']
+            ) or not ch.file_exists(
+                pathname
+            ), f'File {pathname} already exists on host {ch.host}'
             ch.mkdir_p(f['path'])
             with ch.open(pathname, 'w+') as rf:
                 rf.write(body['contentString'])
@@ -195,7 +201,7 @@ def handle_createFileReq(req, body):
         else:
             ch.mkdir_p(f['path'])
 
-    _logger.debug('pathname ' + pathname + ' created')
+    _logger.debug(f'pathname {pathname} created')
 
     return  make_rep(req)
 
@@ -217,12 +223,12 @@ def handle_appendFileReq(req, body):
         sp = ch.path_module.join(sf['path'], sf['name'])
         dp = ch.path_module.join(df['path'], df['name'])
 
-        assert (ch.file_exists(dp)), 'File ' + dp + ' does not exist on host ' + ch.host
+        assert (ch.file_exists(dp)), f'File {dp} does not exist on host {ch.host}'
         content = None
         with ch.open(sp) as sourceFile:
                 content = sourceFile.read()
 
-        assert (ch.file_exists(sp)), 'File ' + sp + ' does not exist on host ' + ch.host        
+        assert (ch.file_exists(sp)), f'File {sp} does not exist on host {ch.host}'
         with ch.open(dp, 'a+') as destinationFile:
             destinationFile.write(content)
 
@@ -249,7 +255,7 @@ def handle_getLogTailReq(req, body):
 
     with produce_ABClusterHost(sf['hostName'], user, pwd) as ch:
         sp = ch.path_module.join(sf['path'], sf['name'])
-        assert (ch.file_exists(sp)), 'File ' + sp + ' does not exist on host ' + ch.host
+        assert (ch.file_exists(sp)), f'File {sp} does not exist on host {ch.host}'
         with ch.open(sp) as logFile:
             return make_rep(req, {'tail': logFile.read()})
 
@@ -300,7 +306,7 @@ def handle_getConfigIni(req, body):
 
     with produce_ABClusterHost(sf['hostName'], user, pwd) as ch:
         sp = ch.path_module.join(sf['path'], sf['name'])
-        assert (ch.file_exists(sp)), 'File ' + sp + ' does not exist on host ' + ch.host
+        assert (ch.file_exists(sp)), f'File {sp} does not exist on host {ch.host}'
         with ch.open(sp) as ini:
             return make_rep(req, {'config': config_parser.parse_cluster_config_ini_(ini)})
     
@@ -315,7 +321,7 @@ def handle_getNdbConfig(req, body):
 def log_thread_name():
     """Utility for dumping thread id in the log."""
     cur_thread = threading.current_thread()
-    _logger.debug("cur_thread="+str(cur_thread.name))
+    _logger.debug(f"cur_thread={str(cur_thread.name)}")
 
 
 class ConfiguratorHandler(BaseHTTPServer.BaseHTTPRequestHandler):
@@ -335,15 +341,20 @@ class ConfiguratorHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         try:
             log_thread_name()
             if self.path == '/':
-               self.path = '/'+mcc_config.MCC_BROWSER_START_PAGE
-            self.server.logger.debug(rt+' fdir='+self.server.opts['fdir']+ " path="+os.path.normpath(self.path))
+                self.path = f'/{mcc_config.MCC_BROWSER_START_PAGE}'
+            self.server.logger.debug(
+                f'{rt} fdir='
+                + self.server.opts['fdir']
+                + " path="
+                + os.path.normpath(self.path)
+            )
             fn = os.path.join(self.server.opts['fdir'], os.path.normpath(self.path[1:]))
             try:
-                os.stat(fn)                
+                os.stat(fn)
             except OSError as ose:
-                self.server.logger.exception(rt + ' '+self.path+ ' failed')
+                self.server.logger.exception(f'{rt} {self.path} failed')
                 if ose.errno == errno.ENOENT:
-                    self.send_error(404, self.path+'=> file://'+ose.filename+' does not exist')
+                    self.send_error(404, f'{self.path}=> file://{ose.filename} does not exist')
                     return
                 raise
 
@@ -357,10 +368,15 @@ class ConfiguratorHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             if rt == 'GET':
                 with open(fn, "rb") as f:
                     self.wfile.write(f.read()+'\r\n\r\n')
-            
+
         except:
-            self.server.logger.exception(rt + ' '+self.path+ ' failed')
-            self.send_error(500,'Unexpected exception occured while processing: '+rt+' '+self.path+'\n'+traceback.format_exc()) # Some other number
+            self.server.logger.exception(f'{rt} {self.path} failed')
+            self.send_error(
+                500,
+                f'Unexpected exception occured while processing: {rt} {self.path}'
+                + '\n'
+                + traceback.format_exc(),
+            )
         
     def do_HEAD(self):
         """Handles HEAD requests by returning the headers without the body if file can be stated."""
@@ -426,11 +442,7 @@ class ConfiguratorServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer)
         the socket in an ssl socket when using ssl."""
         sock,addr = SocketServer.TCPServer.get_request(self)
         if util.get_val(self.opts, 'ssl', False):
-            if self.opts['ca_certs']:
-                cert_reqs = ssl.CERT_REQUIRED
-            else:
-                cert_reqs = ssl.CERT_NONE
-                
+            cert_reqs = ssl.CERT_REQUIRED if self.opts['ca_certs'] else ssl.CERT_NONE
             ssl_sock = ssl.wrap_socket(sock, certfile=self.opts['certfile'], keyfile=self.opts['keyfile'], 
                                        cert_reqs=cert_reqs, ca_certs=self.opts['ca_certs'], server_side=True)
             #self.logger.debug('ssl_sock.getpeercert()='+str(ssl_sock.getpeercert())
